@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f2f2f2;
+      margin: 0;
+    }
+    .calculator {
+      width: 320px;
+      background-color: #fff;
+      border-radius: 15px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+    .display {
+      width: 100%;
+      height: 50px;
+      text-align: right;
+      font-size: 1.8rem;
+      padding: 10px;
+      margin-bottom: 20px;
+      border: none;
+      background-color: #ffeb3b;
+      border-radius: 8px;
+      color: #333;
+      user-select: none;
+    }
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    button {
+      background-color: #03a9f4;
+      border: none;
+      font-size: 1.5rem;
+      padding: 20px;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: background-color 0.3s, transform 0.2s;
+      color: white;
+      user-select: none;
+    }
+    button:hover {
+      background-color: #0288d1;
+      transform: scale(1.1);
+    }
+    button:active {
+      transform: scale(0.95);
+    }
+    button.clear {
+      background-color: #ff5722;
+    }
+    button.clear:hover {
+      background-color: #e64a19;
+    }
+    button.equal {
+      background-color: #8bc34a;
+    }
+    button.equal:hover {
+      background-color: #689f38;
+    }
+    button.operator {
+      background-color: #ff9800;
+    }
+    button.operator:hover {
+      background-color: #f57c00;
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <input type="text" id="display" class="display" disabled />
+    <div class="buttons">
+      <button class="clear" id="clear">C</button>
+      <button class="operator" data-operation="/">/</button>
+      <button class="operator" data-operation="*">*</button>
+      <button class="operator" data-operation="-">-</button>
+
+      <button data-number="7">7</button>
+      <button data-number="8">8</button>
+      <button data-number="9">9</button>
+      <button class="operator" data-operation="+">+</button>
+
+      <button data-number="4">4</button>
+      <button data-number="5">5</button>
+      <button data-number="6">6</button>
+      <button class="equal" id="equals">=</button>
+
+      <button data-number="1">1</button>
+      <button data-number="2">2</button>
+      <button data-number="3">3</button>
+      <button data-number="0" style="grid-column: span 2;">0</button>
+      <button data-number=".">.</button>
+    </div>
+  </div>
+
+  <script>
+    const display = document.getElementById('display');
+    const buttons = document.querySelectorAll('button');
+    let currentInput = '';
+    let previousInput = '';
+    let operation = null;
+
+    function updateDisplay() {
+      display.value = currentInput || '0';
+    }
+
+    function clearAll() {
+      currentInput = '';
+      previousInput = '';
+      operation = null;
+      updateDisplay();
+    }
+
+    function appendNumber(number) {
+      if (number === '.' && currentInput.includes('.')) return;
+      currentInput += number;
+      updateDisplay();
+    }
+
+    function chooseOperation(op) {
+      if (currentInput === '') return;
+      if (previousInput !== '') calculate();
+      operation = op;
+      previousInput = currentInput;
+      currentInput = '';
+    }
+
+    function calculate() {
+      let prev = parseFloat(previousInput);
+      let current = parseFloat(currentInput);
+      if (isNaN(prev) || isNaN(current)) return;
+
+      let result;
+      switch (operation) {
+        case '+':
+          result = prev + current;
+          break;
+        case '-':
+          result = prev - current;
+          break;
+        case '*':
+          result = prev * current;
+          break;
+        case '/':
+          if (current === 0) {
+            alert('Error: Division by zero');
+            clearAll();
+            return;
+          }
+          result = prev / current;
+          break;
+        default:
+          return;
+      }
+
+      currentInput = result.toString();
+      operation = null;
+      previousInput = '';
+      updateDisplay();
+    }
+
+    buttons.forEach(button => {
+      if (button.hasAttribute('data-number')) {
+        button.addEventListener('click', () => appendNumber(button.getAttribute('data-number')));
+      }
+      if (button.hasAttribute('data-operation')) {
+        button.addEventListener('click', () => chooseOperation(button.getAttribute('data-operation')));
+      }
+    });
+
+    document.getElementById('clear').addEventListener('click', clearAll);
+    document.getElementById('equals').addEventListener('click', () => {
+      if (currentInput === '' || previousInput === '') return;
+      calculate();
+    });
+
+    // Keyboard Controls
+    document.addEventListener('keydown', (e) => {
+      if ((e.key >= '0' && e.key <= '9') || e.key === '.') {
+        appendNumber(e.key);
+      } else if (['+', '-', '*', '/'].includes(e.key)) {
+        chooseOperation(e.key);
+      } else if (e.key === 'Enter' || e.key === '=') {
+        calculate();
+      } else if (e.key === 'Escape' || e.key.toLowerCase() === 'c') {
+        clearAll();
+      }
+    });
+    updateDisplay();
+  </script>
+</body>
+</html>
