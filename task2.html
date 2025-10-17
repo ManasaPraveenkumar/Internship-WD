@@ -75,7 +75,11 @@
     button.operator:hover {
       background-color: #f57c00;
     }
-  </style>
+    button.operator:focus {
+    background-color: #ffb74d;
+    transform: scale(1.05);
+    }
+</style>
 </head>
 <body>
   <div class="calculator">
@@ -105,99 +109,82 @@
   </div>
 
   <script>
-    const display = document.getElementById('display');
-    const buttons = document.querySelectorAll('button');
-    let currentInput = '';
-    let previousInput = '';
-    let operation = null;
+  const display = document.getElementById('display');
+  const buttons = document.querySelectorAll('button');
+  let currentInput = '';
+  let expression = ''; // new variable to store the full expression
+  let operation = null;
 
-    function updateDisplay() {
-      display.value = currentInput || '0';
-    }
+  function updateDisplay() {
+    display.value = expression || '0';
+  }
 
-    function clearAll() {
-      currentInput = '';
-      previousInput = '';
-      operation = null;
-      updateDisplay();
-    }
+  function clearAll() {
+    currentInput = '';
+    expression = '';
+    operation = null;
+    updateDisplay();
+  }
 
-    function appendNumber(number) {
-      if (number === '.' && currentInput.includes('.')) return;
-      currentInput += number;
-      updateDisplay();
-    }
+  function appendNumber(number) {
+    currentInput += number;
+    expression += number;
+    updateDisplay();
+  }
 
-    function chooseOperation(op) {
-      if (currentInput === '') return;
-      if (previousInput !== '') calculate();
-      operation = op;
-      previousInput = currentInput;
-      currentInput = '';
-    }
+  function chooseOperation(op) {
+    if (currentInput === '' && expression === '') return;
+    // prevent double operators
+    if (/[+\-*/]$/.test(expression)) return;
 
-    function calculate() {
-      let prev = parseFloat(previousInput);
-      let current = parseFloat(currentInput);
-      if (isNaN(prev) || isNaN(current)) return;
+    operation = op;
+    currentInput = '';
+    expression += ' ' + op + ' ';
+    updateDisplay();
+  }
 
-      let result;
-      switch (operation) {
-        case '+':
-          result = prev + current;
-          break;
-        case '-':
-          result = prev - current;
-          break;
-        case '*':
-          result = prev * current;
-          break;
-        case '/':
-          if (current === 0) {
-            alert('Error: Division by zero');
-            clearAll();
-            return;
-          }
-          result = prev / current;
-          break;
-        default:
-          return;
-      }
-
+  function calculate() {
+    try {
+      // Replace multiple spaces and evaluate safely
+      const safeExpr = expression.replace(/[^-()\d/*+.]/g, '');
+      const result = Function('return ' + safeExpr)();
+      expression = result.toString();
       currentInput = result.toString();
       operation = null;
-      previousInput = '';
       updateDisplay();
+    } catch {
+      alert('Invalid Expression');
+      clearAll();
     }
+  }
 
-    buttons.forEach(button => {
-      if (button.hasAttribute('data-number')) {
-        button.addEventListener('click', () => appendNumber(button.getAttribute('data-number')));
-      }
-      if (button.hasAttribute('data-operation')) {
-        button.addEventListener('click', () => chooseOperation(button.getAttribute('data-operation')));
-      }
-    });
+  buttons.forEach(button => {
+    if (button.hasAttribute('data-number')) {
+      button.addEventListener('click', () => appendNumber(button.getAttribute('data-number')));
+    }
+    if (button.hasAttribute('data-operation')) {
+      button.addEventListener('click', () => chooseOperation(button.getAttribute('data-operation')));
+    }
+  });
 
-    document.getElementById('clear').addEventListener('click', clearAll);
-    document.getElementById('equals').addEventListener('click', () => {
-      if (currentInput === '' || previousInput === '') return;
+  document.getElementById('clear').addEventListener('click', clearAll);
+  document.getElementById('equals').addEventListener('click', calculate);
+
+  // Keyboard Controls
+  document.addEventListener('keydown', (e) => {
+    if ((e.key >= '0' && e.key <= '9') || e.key === '.') {
+      appendNumber(e.key);
+    } else if (['+', '-', '*', '/'].includes(e.key)) {
+      chooseOperation(e.key);
+    } else if (e.key === 'Enter' || e.key === '=') {
       calculate();
-    });
+    } else if (e.key === 'Escape' || e.key.toLowerCase() === 'c') {
+      clearAll();
+    }
+  });
 
-    // Keyboard Controls
-    document.addEventListener('keydown', (e) => {
-      if ((e.key >= '0' && e.key <= '9') || e.key === '.') {
-        appendNumber(e.key);
-      } else if (['+', '-', '*', '/'].includes(e.key)) {
-        chooseOperation(e.key);
-      } else if (e.key === 'Enter' || e.key === '=') {
-        calculate();
-      } else if (e.key === 'Escape' || e.key.toLowerCase() === 'c') {
-        clearAll();
-      }
-    });
-    updateDisplay();
-  </script>
+  updateDisplay();
+</script>
+
 </body>
 </html>
