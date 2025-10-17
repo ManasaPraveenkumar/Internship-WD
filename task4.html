@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple To-Do App</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: linear-gradient(120deg, #f6d365, #fda085); /* beautiful gradient */
+  display: flex;
+  justify-content: center;
+  padding: 50px 10px;
+}
+
+
+.todo-container {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 700px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+h2 { text-align: center; margin-bottom: 15px; }
+form { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+input, select, button { padding: 10px; font-size: 1rem; border-radius: 5px; border: 1px solid #ccc; }
+button { cursor: pointer; background-color: #03a9f4; color: white; border: none; }
+button:hover { background-color: #0288d1; }
+.filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+ul { list-style: none; padding: 0; margin-top: 10px; }
+li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-radius:5px; margin-bottom:5px; cursor: grab;}
+li.completed { text-decoration: line-through; color: gray; opacity:0.7;}
+.task-info { display: flex; flex-direction: column; gap: 3px; }
+.actions button { margin-left: 5px; padding: 5px 10px; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<div class="todo-container">
+  <h2>To-Do App</h2>
+  <form id="todoForm">
+    <input type="text" id="taskTitle" placeholder="Task Title" required />
+    <input type="datetime-local" id="taskDateTime" />
+    <select id="taskCategory">
+      <option value="General">General</option>
+      <option value="Work">Work</option>
+      <option value="Personal">Personal</option>
+      <option value="Shopping">Shopping</option>
+    </select>
+    <select id="taskPriority">
+      <option value="Low">Low Priority</option>
+      <option value="Medium">Medium Priority</option>
+      <option value="High">High Priority</option>
+    </select>
+    <button type="submit">Add Task</button>
+  </form>
+
+  <div class="filters">
+    <select id="filterCategory">
+      <option value="All">All Categories</option>
+      <option value="Work">Work</option>
+      <option value="Personal">Personal</option>
+      <option value="Shopping">Shopping</option>
+      <option value="General">General</option>
+    </select>
+    <select id="filterPriority">
+      <option value="All">All Priorities</option>
+      <option value="High">High</option>
+      <option value="Medium">Medium</option>
+      <option value="Low">Low</option>
+    </select>
+    <button id="clearFilters">Clear Filters</button>
+  </div>
+
+  <ul id="taskList"></ul>
+</div>
+
+<script>
+const todoForm = document.getElementById('todoForm');
+const taskList = document.getElementById('taskList');
+const filterCategory = document.getElementById('filterCategory');
+const filterPriority = document.getElementById('filterPriority');
+const clearFilters = document.getElementById('clearFilters');
+
+let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+function renderTasks(){
+  taskList.innerHTML = '';
+  const filteredTasks = tasks.filter(task=>{
+    const categoryMatch = filterCategory.value==='All' || task.category===filterCategory.value;
+    const priorityMatch = filterPriority.value==='All' || task.priority===filterPriority.value;
+    return categoryMatch && priorityMatch;
+  });
+
+  filteredTasks.forEach((task,index)=>{
+    const li = document.createElement('li');
+    li.draggable=true;
+    li.dataset.id = tasks.indexOf(task); // use original index in tasks array
+    li.className = task.completed ? 'completed' : '';
+
+    let bgColor='';
+    if(task.priority==="High") bgColor='#ff9999';
+    else if(task.priority==="Medium") bgColor='#fff59d';
+    else bgColor='#b3e5fc';
+    li.style.backgroundColor = bgColor;
+
+    li.innerHTML = `
+      <div class="task-info">
+        <strong>${task.title}</strong>
+        <small>Category: ${task.category}</small>
+        ${task.dateTime?`<small>${new Date(task.dateTime).toLocaleString()}</small>`:''}
+      </div>
+      <div class="actions">
+        <button onclick="toggleComplete(${tasks.indexOf(task)})">${task.completed?'Undo':'Done'}</button>
+        <button onclick="editTask(${tasks.indexOf(task)})">Edit</button>
+        <button onclick="deleteTask(${tasks.indexOf(task)})">Delete</button>
+      </div>
+    `;
+    taskList.appendChild(li);
+  });
+}
+
+todoForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  const title = document.getElementById('taskTitle').value;
+  const dateTime = document.getElementById('taskDateTime').value;
+  const category = document.getElementById('taskCategory').value;
+  const priority = document.getElementById('taskPriority').value;
+
+  tasks.push({title,dateTime,category,priority,completed:false});
+  localStorage.setItem('tasks',JSON.stringify(tasks));
+  todoForm.reset();
+  renderTasks();
+});
+
+function toggleComplete(index){
+  tasks[index].completed = !tasks[index].completed;
+  localStorage.setItem('tasks',JSON.stringify(tasks));
+  renderTasks();
+}
+
+function editTask(index){
+  const newTitle = prompt("Edit Task Title:",tasks[index].title);
+  if(newTitle){
+    tasks[index].title = newTitle;
+    const newDateTime = prompt("Edit Date & Time (YYYY-MM-DDTHH:MM):",tasks[index].dateTime||'');
+    if(newDateTime) tasks[index].dateTime=newDateTime;
+    const newCategory = prompt("Edit Category:",tasks[index].category||'General');
+    if(newCategory) tasks[index].category=newCategory;
+    const newPriority = prompt("Edit Priority (Low/Medium/High):",tasks[index].priority||'Low');
+    if(newPriority) tasks[index].priority=newPriority;
+    localStorage.setItem('tasks',JSON.stringify(tasks));
+    renderTasks();
+  }
+}
+
+function deleteTask(index){
+  if(confirm("Delete this task?")){
+    tasks.splice(index,1);
+    localStorage.setItem('tasks',JSON.stringify(tasks));
+    renderTasks();
+  }
+}
+
+filterCategory.addEventListener('change',renderTasks);
+filterPriority.addEventListener('change',renderTasks);
+clearFilters.addEventListener('click',()=>{
+  filterCategory.value='All';
+  filterPriority.value='All';
+  renderTasks();
+});
+
+let draggedIndex = null;
+
+taskList.addEventListener('dragstart', e => {
+  const li = e.target.closest('li');
+  if (!li) return;
+  draggedIndex = parseInt(li.dataset.id);
+  e.dataTransfer.effectAllowed = "move";
+});
+
+taskList.addEventListener('dragover', e => e.preventDefault());
+
+taskList.addEventListener('drop', e => {
+  e.preventDefault();
+  const li = e.target.closest('li');
+  if (!li || draggedIndex === null) return;
+  const targetIndex = parseInt(li.dataset.id);
+  const draggedTask = tasks.splice(draggedIndex, 1)[0];
+  tasks.splice(targetIndex, 0, draggedTask);
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+  renderTasks();
+  draggedIndex = null;
+});
+
+renderTasks();
+</script>
+</body>
+</html>
