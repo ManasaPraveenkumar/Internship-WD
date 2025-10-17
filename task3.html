@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tic-Tac-Toe</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    background: linear-gradient(135deg, #74ebd5, #ACB6E5);
+  }
+
+  h1 { margin-bottom: 20px; color: #333; text-align: center; }
+
+  .settings {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  input[type="text"] {
+    padding: 5px 10px;
+    font-size: 1rem;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    width: 120px;
+    text-align: center;
+  }
+
+  label { font-size: 0.9rem; }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    grid-template-rows: repeat(3, 100px);
+    gap: 10px;
+  }
+
+  .cell {
+    width: 100px;
+    height: 100px;
+    background-color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background-color 0.3s, transform 0.2s;
+  }
+
+  .cell:hover { background-color: #f1f1f1; }
+  .cell.winner { background-color: #8bc34a; color: white; transform: scale(1.2); }
+
+  .message { margin-top: 20px; font-size: 1.2rem; color: #222; text-align: center; }
+
+  .btn { margin-top: 15px; padding: 10px 20px; background-color: #03a9f4; color: white; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; }
+  .btn:hover { background-color: #0288d1; }
+
+  @media (max-width: 400px) {
+    .board { grid-template-columns: repeat(3, 80px); grid-template-rows: repeat(3, 80px); }
+    .cell { width: 80px; height: 80px; font-size: 2rem; }
+    input[type="text"] { width: 90px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Tic-Tac-Toe</h1>
+
+<div class="settings">
+  <label>
+    <input type="checkbox" id="vsComputer" /> Play vs Smart AI 🤖
+  </label>
+  <input type="text" id="player1Name" placeholder="Player 1 Name" value="Player 1">
+  <input type="text" id="player1Symbol" placeholder="Symbol" value="X" maxlength="2">
+  <input type="text" id="player2Name" placeholder="Player 2 Name / AI" value="Player 2">
+  <input type="text" id="player2Symbol" placeholder="Symbol" value="O" maxlength="2">
+</div>
+
+<div class="board" id="board"></div>
+<div class="message" id="message"></div>
+<button class="btn" id="resetBtn">Restart Game</button>
+
+<script>
+const boardElement = document.getElementById("board");
+const messageElement = document.getElementById("message");
+const resetBtn = document.getElementById("resetBtn");
+const vsComputerCheckbox = document.getElementById("vsComputer");
+
+const player1NameInput = document.getElementById("player1Name");
+const player2NameInput = document.getElementById("player2Name");
+const player1SymbolInput = document.getElementById("player1Symbol");
+const player2SymbolInput = document.getElementById("player2Symbol");
+
+let board = Array(9).fill(null);
+let currentPlayer = "player1";
+let gameActive = true;
+let winningPattern = [];
+
+const winPatterns = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+function createBoard(){
+  boardElement.innerHTML="";
+  for(let i=0;i<9;i++){
+    const cell = document.createElement("div");
+    cell.classList.add("cell");
+    cell.dataset.index=i;
+    cell.addEventListener("click",handleCellClick);
+    boardElement.appendChild(cell);
+  }
+}
+
+createBoard();
+
+function handleCellClick(e){
+  const index = e.target.dataset.index;
+  if(currentPlayer === "player1"){
+  e.target.style.backgroundColor = "#E6E6FA"; 
+  } else {
+  e.target.style.backgroundColor = "#FFB6C1";
+  }
+  if(!gameActive || board[index]) return;
+
+  const symbol = currentPlayer==="player1"?player1SymbolInput.value||"X":player2SymbolInput.value||"O";
+  board[index] = currentPlayer;
+  e.target.textContent = symbol;
+
+  const win = checkWin(currentPlayer);
+  if(win){
+    messageElement.textContent=`🎉 ${currentPlayer==="player1"?player1NameInput.value:player2NameInput.value} Wins!`;
+    gameActive=false;
+    highlightWinningCells(win);
+    return;
+  }
+
+  if(board.every(cell=>cell)){
+    messageElement.textContent="It's a Draw!";
+    gameActive=false;
+    return;
+  }
+
+  if(currentPlayer==="player1") currentPlayer="player2";
+  else currentPlayer="player1";
+
+  if(vsComputerCheckbox.checked && currentPlayer==="player2" && gameActive){
+    setTimeout(computerMove, 300);
+  }
+}
+
+function checkWin(player){
+  for(let pattern of winPatterns){
+    if(pattern.every(i=>board[i]===player)){
+      winningPattern=pattern;
+      return pattern;
+    }
+  }
+  return null;
+}
+
+function highlightWinningCells(pattern){
+  pattern.forEach(i=>{
+    document.querySelector(`[data-index='${i}']`).classList.add("winner");
+  });
+}
+
+resetBtn.addEventListener("click",()=>{
+  board = Array(9).fill(null);
+  currentPlayer="player1";
+  gameActive=true;
+  winningPattern=[];
+  messageElement.textContent="";
+  createBoard();
+});
+
+function computerMove(){
+  const bestMove = minimax(board,"player2").index;
+  const cell = document.querySelector(`[data-index='${bestMove}']`);
+  cell.click();
+}
+
+function minimax(newBoard, player){
+  const availSpots = newBoard.map((v,i)=>v===null?i:null).filter(v=>v!==null);
+
+  if(checkWinner(newBoard,"player1")) return {score:-10};
+  if(checkWinner(newBoard,"player2")) return {score:10};
+  if(availSpots.length===0) return {score:0};
+
+  const moves=[];
+  for(let i=0;i<availSpots.length;i++){
+    const move={index:availSpots[i]};
+    newBoard[availSpots[i]]=player;
+
+    if(player==="player2") move.score = minimax(newBoard,"player1").score;
+    else move.score = minimax(newBoard,"player2").score;
+
+    newBoard[availSpots[i]]=null;
+    moves.push(move);
+  }
+
+  let bestMove;
+  if(player==="player2"){
+    let bestScore=-Infinity;
+    for(let m of moves){
+      if(m.score>bestScore){ bestScore=m.score; bestMove=m; }
+    }
+  } else {
+    let bestScore=Infinity;
+    for(let m of moves){
+      if(m.score<bestScore){ bestScore=m.score; bestMove=m; }
+    }
+  }
+  return bestMove;
+}
+
+function checkWinner(b,p){
+  return winPatterns.some(pattern=>pattern.every(i=>b[i]===p));
+}
+</script>
+</body>
+</html>
